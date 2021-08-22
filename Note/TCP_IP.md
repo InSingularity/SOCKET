@@ -2,6 +2,10 @@
 
 ### 套接字
 
+####  基于TCP的服务器端/客户端函数调用关系
+
+![image-20210822171328901](F:\Git\Github\SOCKET\Image\img_1.png)
+
 #### 使用函数列表
 
 ```c
@@ -13,6 +17,7 @@ int socket(int domain, int type, int protocol);
 int bind(iht sockfd, struct sockaddr * myaddr, socklen_t addrlen);
 
 //转为可接受的请求状态
+//backlog:连接请求等待队列的长度
 int listen(int sockfd, int backlog);
 
 //受理连接请求
@@ -78,33 +83,34 @@ int recv(SOCKET s, const char * buf, int len, int flags);
 
 1. ==sockaddr_in==  (作为地址信息传递给bind函数)
 
-   ```C
-   struct sockaddr_in
-   {
-   	sa_family_t     sin_family;  //地址族
-       unit16          sin_port;    //16位TCP/UDP端口号
-       struct in_addr  sin_addr;	 //32位IP地址
-       char			sin_zero[8]  //不使用
-   };
-   
-   struct in_addr
-   {
-       In_addr_t 		s_addr;		//32位IPV4地址
-   };
-   in_addr_t	//unit32_t
-   ```
+```C
+struct sockaddr_in
+{
+	sa_family_t     sin_family;  //地址族
+    unit16          sin_port;    //16位TCP/UDP端口号
+    struct in_addr  sin_addr;	 //32位IP地址
+    char			sin_zero[8]  //不使用
+};
+
+struct in_addr
+{
+    In_addr_t 		s_addr;		//32位IPV4地址
+};
+
+in_addr_t	//unit32_t（32位bit）
+```
 
 2. ==sockaddr==  
 
-   ```C
-   struct sockaddr
-   {
-   	sa_family_t		sin_falily;		//地址族
-       char			sa_data[14];	//地址信息（包含IP地址和端口号）
-   };
-   ```
+```C
+struct sockaddr
+{
+	sa_family_t		sin_falily;		//地址族
+    char			sa_data[14];	//地址信息（包含IP地址和端口号）
+};
+```
 
-3. 字节序转换
+3. ==字节序转换==
 
    3.1 大小端存储
 
@@ -113,7 +119,51 @@ int recv(SOCKET s, const char * buf, int len, int flags);
 
    3.2 字节序转换
 
+   ```C
+   //h:住机（host）,n:网络（network），s:short型（2字节），l:long型（4字节）
    
+   //把short型数据从主机字节序转化位网络字节序
+   unsigned short htons(unsigned short);
+   
+   unsigned short ntohs(unsigned short);
+   
+   unsigned long htonl(unsigned long);
+   
+   unsigned long ntohl(unsigned long);
+   
+   ```
 
+4. ==字符串信息转换为网络字节序的整数型==
+
+   ```c
+   //字符串形式的IP地址转换成32位整型数据(即："1.2.3.4" --> 0x4030201)
+   in_addr_t inet_addr(const char * string);
    
+   //功能同上,只是无需再次将信息复制到sockaddr_in.sin_addr（windows无此函数）
+   int inet_aton(const char * string, struct in_addr * addr);
+   
+   //32bit -> 字符串 (调用完该函数后，应立即将字符串信息复制到其它内存空间中)
+   char * inet_ntoa(struct in_addr adr);
+   
+   ======================================================================
+       
+   /****   只存在于windows中的转换函数  ****/
+   //优点：在IPv4和IPv6中均可使用
+   
+   int WSAStringToAddress(
+       LPTSTR AddressString, 				//含有IP和端口号的字符串地址
+       int AddressFamily, 					//第一个参数中地址所属的地址族信息
+       LPWSAPROTOCOL_INFO lpProtocolInfo,  //设置协议提供者，默认为NULL
+       LPSOCKADDR lpAddress, 				//保存地址信息的结构体变量地址
+       LPINT lpAddressLength				//第四个参数中传递的结构长度所在的变量地址
+   );
+   
+   int WSAAddressToString(
+       LPSOCKADDR lpsaAddress, 			//需要转换的地址信息结构体变量地址
+       DWORD dwAddressLength,				//第一个参数中结构体变量长度
+       LPWSAPROTOCOL_INFO lpProtocolInfo,  //设置协议提供者，默认为NULL
+   	LPTSTR lpszAddressString, 			//保存转换结果的字符串地址
+       LPDWORD lpdwAddressStringLength		//第四个参数中存有地址信息的字符串长度
+   );
+   ```
 
