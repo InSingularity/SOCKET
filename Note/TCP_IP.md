@@ -1,3 +1,5 @@
+
+
 # TCP/IP
 
 ### 套接字
@@ -8,63 +10,171 @@
 
 #### 使用函数列表
 
+##### Linux和windows相同的套接字相关函数 
+
 ```c
-/**** Linux和windows相同的套接字相关函数 ****/
-//创建套接字
+/**
+ * @brief：创建套接字
+ * @param domain：套接字中使用的协议族信息（例如：PF_INET、PF_INET6、PF_LOCAL、、、）
+ * @param type：套接字数据传输类型信息（例如：SOCK_STREAM、SOCK_DGRAM、、、）
+ * @param protocol：计算机间通信使用的协议信息(例如：IPPROTO_TCP、IPPROTO_UDP、、、)
+ * @return：成功返回socket文件描述符（或句柄），失败返回-1（或SOCKET_ERROR）
+ */
 int socket(int domain, int type, int protocol); 
 
-//分配IP地址和端口号
-int bind(iht sockfd, struct sockaddr * myaddr, socklen_t addrlen);
+/**
+ * @brief：分配IP地址和端口号（如果此函数调用成功，则将第二个参数指定的地址信息分配给第一个参数中的相应套接字）
+ * @param sockfd：要分配地址信息的套接字描述符
+ * @param myaddr：
+ * @param addrlen：
+ * @return：成功返回0，失败返回-1
+ */
+int bind(int sockfd, struct sockaddr * myaddr, socklen_t addrlen);
 
-//转为可接受的请求状态
-//backlog:连接请求等待队列的长度
+/**
+ * @brief：将套接字转为可接收连接状态
+ * @param sockfd：希望进入等待连接请求的套接字文件描述符，传递的套接字文件描述符参数为服务器端套接字（监听套接字）
+ * @param backlog：连接请求等待队列的长度
+ * @return：成功返回0，失败返回-1
+ */
 int listen(int sockfd, int backlog);
 
-//受理连接请求
+/**
+ * @brief：受理连接请求等待队列中待处理的客户连接请求。（若调用成功，函数内部将自动产生用于数据I/O的套接字）
+ * @param sockfd：服务器套接字的文件描述符
+ * @param addr：发起连接请求的客户端地址，调用函数后向传递来的地址变量参数填充客户端地址
+ * @param addrlen：第二个参数的长度，但是存有长度的变量地址。函数调用完成后，该变量即被填入客户端地址长度
+ * @return：成功返回创建的套接字文件描述符（或句柄），失败返回-1（或SOCKET_ERROR）
+ */
 int accept(int sockfd, struct sockaddr * addr, socklen_t * addrlen);
 
-//请求连接
-int connect(int sockfd, struct sockaddr * serv_addr, socklen_t addrlen);
+/**
+ * @brief：（向服务器端）请求连接
+ * @param sockfd：客户端套接字文件描述符
+ * @param servaddr：目标服务器地址信息的变量地址
+ * @param addrlen：第二个参数servaddr的地址变量长度
+ * @return：成功返回0，失败返回-1
+ */
+int connect(int sockfd, struct sockaddr * servaddr, socklen_t addrlen);
+```
+##### windos下winsock独有的相关函数
 
+```c
 /*****  使用windos时必须以下两个函数进行winsock的初始化和注销 ****/
 /*****  需要导入头文件winsock2.h，链接ws2_32.lib库			****/
 
-//winsock初始化
-//wVersionRequested:使用的Winsock版本信息。使用MAKEWORD(1,2),主版本1，副版本2
-//LPWSADATA:WSADATA结构体变量的地址
+/**
+ * @brief：winsock初始化	
+ * @param wVersionRequested:使用的Winsock版本信息。使用MAKEWORD(1,2),主版本1，副版本2
+ * @param lpWSAData:WSADATA结构体变量的地址
+ * @return：成功返回0，失败返回非零的错误代码值
+ */
 int WSAStartup(WORD wVersionRequested, LPWSADATA lpWASAData);
 
-//winsock注销
+/**
+ * @brief：winsock注销
+ * @return：成功返回0，失败返回SOCKET_ERROR
+ */
 int WSACleanup(void);
 
-/**** winsock独有 ****/
-
-//关闭套接字
+/**
+ * @brief：关闭windows的套接字	
+ * @param fd：需要关闭的套接字的文件描述符
+ * @return：成功返回0，失败返回SOCKET_ERROR
+ */
 int closesocket(SOCKET s);
 
-========================================================================
-    
-/**** Linux文件操作（Linux的sock操作和文件操作无区别） ****/
-    
-//打开文件
-int open(const char * path, int flag);		//flag可以通过位运算"|"符组合并传递多个参数
+```
+##### 文件操作的相关函数 （Linux的sock操作和文件操作无区别）
 
-//关闭文件
-int close(int fd);		//文件描述符
+```C
+/**
+ * @brief：打开文件	
+ * @param path：文件名的字符串地址
+ * @param flag：文件打开模式，可以通过位运算"|"符组合并传递多个模式
+ * @return：成功返回文件描述符，失败返回-1
+ */
+int open(const char * path, int flag);	
 
-//写入文件（Linux套接字同）
+/**
+ * @brief：关闭文件（或Linux的套接字）	
+ * @param fd：需要关闭的文件或套接字的文件描述符
+ * @return：成功返回0，失败返回-1
+ */
+int close(int fd);
+
+/**
+ * @brief：写入文件（Linux套接字同）	
+ * @param fd：数据传输对象的文件描述符
+ * @param buf：需要传输数据的缓冲地址值
+ * @param nbytes：要传输数据的字节数
+ * @return：成功返回写入的字节数，失败返回-1
+ */
 ssize_t write(int fd, const void * buf, size_t nbytes);
 
-//读取文件 (Linux套接字同）
+/**
+ * @brief：读取文件 (Linux套接字同）	
+ * @param fd：数据传输对象的文件描述符
+ * @param buf：需要传输数据的缓冲地址值
+ * @param nbytes：要传输数据的字节数
+ * @return：成功返回写入的字节数，失败返回-1
+ */
 ssize_t read(int fd, void * buf, size_t nbytes);
+```
+##### windows 的套接字I/O
 
-/**** windows 的套接字I/O(Linux直接与文件I/O相同即:read()和write())  ****/
+```c
+/****Linux直接与文件I/O相同即:read()和write()，以下为Windows独有 ****/
 
-//winsock传输函数
+/**
+ * @brief：winsock数据传输函数	
+ * @param s：数据传输对象连接的套接字句柄值
+ * @param buf：需要传输数据的缓冲地址值
+ * @param len：要传输数据的字节数
+ * @param flags：传输数据时用到的多种选项信息
+ * @return：成功时返回传输字节数，失败返回SOCKET_ERROR
+ */
 int send(SOCKET s, const char * buf, int len, int flags);
 
-//winsock接收函数
+/**
+ * @brief：winsock数据接收函数
+ * @param s：数据接收对象连接的套接字句柄值
+ * @param buf：需要保存数据的缓冲地址值
+ * @param len：能够接收的最大字节数
+ * @param flags：接收数据时用到的多种选项信息
+ * @return：成功时返回接收到字节数（收到EOF时为0），失败返回SOCKET_ERROR
+ */
 int recv(SOCKET s, const char * buf, int len, int flags);
+
+```
+##### UDP的数据I/O (Linux和windows相同)
+
+```c
+/**
+ * @brief：UDP传输数据函数
+ * @param sock：用于传输数据的UDP套接字文件描述符
+ * @param buf：保存待传输数据的缓冲地址
+ * @param hbytes：待传输数据长度
+ * @param flags：可选参数，若没有则传递0
+ * @param to：存有目标地址信息的sockaddr结构体变量的地址
+ * @param addrlen：传递给参数to的地址结构体变量长度
+ * @return：成功时返回传输的字节数，失败返回-1
+ */
+ssize_t sendto(int sock, void * buf, size_t hbytes, int flags,
+               struct sockaddr * to, socklen_t addrlen);
+
+/**
+ * @breief：UDP接收数据函数
+ * @param sock：用于传输数据的UDP套接字文件描述符
+ * @param buf：保存接收数据的缓冲地址
+ * @param hbytes：可接收的最大字节数，故无法超过参数buff所指的缓存大小
+ * @param flags：可选参数，若没有则传递0
+ * @param from：存有发送端地址信息的sockaddr结构体变量的地址
+ * @param addrlen：参数from的地址结构体变量长度
+ * @return：成功时返回接收到字节数（收到EOF时为0），失败返回-1
+ */
+ssize_t recvfrom(int sock, void * buf, size_t hbytes, int flags,
+                 struct sockaddr * from, socklen_t addrlen);
 
 ```
 
@@ -150,20 +260,30 @@ struct sockaddr
    /****   只存在于windows中的转换函数  ****/
    //优点：在IPv4和IPv6中均可使用
    
-   int WSAStringToAddress(
-       LPTSTR AddressString, 				//含有IP和端口号的字符串地址
-       int AddressFamily, 					//第一个参数中地址所属的地址族信息
-       LPWSAPROTOCOL_INFO lpProtocolInfo,  //设置协议提供者，默认为NULL
-       LPSOCKADDR lpAddress, 				//保存地址信息的结构体变量地址
-       LPINT lpAddressLength				//第四个参数中传递的结构长度所在的变量地址
-   );
+   /**
+    * @breief：字符串 -> 32bit 
+    * @param AddressString：含有IP和端口号的字符串地址
+    * @param AddressFamily：第一个参数中地址所属的地址族信息
+    * @param lpProtocolInfo：设置协议提供者，默认为NULL
+    * @param lpAddress：保存地址信息的结构体变量地址
+    * @param lpAddressLength：第四个参数中传递的结构长度所在的变量地址
+    * @return：成功时返回0，失败返回SOCKET_ERROR
+    */
+   int WSAStringToAddress(LPTSTR AddressString, int AddressFamily,
+                          LPWSAPROTOCOL_INFO lpProtocolInfo, 
+                          LPSOCKADDR lpAddress, LPINT lpAddressLength);
    
-   int WSAAddressToString(
-       LPSOCKADDR lpsaAddress, 			//需要转换的地址信息结构体变量地址
-       DWORD dwAddressLength,				//第一个参数中结构体变量长度
-       LPWSAPROTOCOL_INFO lpProtocolInfo,  //设置协议提供者，默认为NULL
-   	LPTSTR lpszAddressString, 			//保存转换结果的字符串地址
-       LPDWORD lpdwAddressStringLength		//第四个参数中存有地址信息的字符串长度
-   );
+   /**
+    * @breief：32bit -> 字符串
+    * @param lpsaAddress：需要转换的地址信息结构体变量地址
+    * @param dwAddressLength：第一个参数中结构体变量长度
+    * @param lpProtocolInfo：设置协议提供者，默认为NULL
+    * @param lpszAddressString：保存转换结果的字符串地址
+    * @param lpdwAddressStringLength：第四个参数中存有地址信息的字符串长度
+    * @return：成功时返回0，失败返回SOCKET_ERROR
+    */
+   int WSAAddressToString(LPSOCKADDR lpsaAddress, DWORD dwAddressLength, 
+                          LPWSAPROTOCOL_INFO lpProtocolInfo,
+                          LPTSTR lpszAddressString, LPDWORD lpdwAddressStringLength);
    ```
 
