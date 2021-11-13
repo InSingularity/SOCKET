@@ -8,6 +8,17 @@
 
 ![image-20210822171328901](../Image/img_1.png)
 
+#### 接受连接请求的套接字创建过程(server端)
+
+1. 调用socket函数创建套接字。
+2. 调用bind函数分配IP地址和端口号。
+3. 调用listen函数转为可接受的请求状态。
+4. 调用accept函数受理连接请求。
+
+==创建套接字，但此时并不马上分为服务器端和客户端。如果紧接着调用bind、listen函数，将成为服务器端套接字；如果调用connect函数，将成为客户端套接字。==
+
+
+
 #### 使用函数列表
 
 ##### Linux和windows相同的套接字相关函数 
@@ -25,8 +36,8 @@ int socket(int domain, int type, int protocol);
 /**
  * @brief：分配IP地址和端口号（如果此函数调用成功，则将第二个参数指定的地址信息分配给第一个参数中的相应套接字）
  * @param sockfd：要分配地址信息的套接字描述符
- * @param myaddr：
- * @param addrlen：
+ * @param myaddr：地址信息的结构体变量地址
+ * @param addrlen：第二个结构体变量的长度
  * @return：成功返回0，失败返回-1
  */
 int bind(int sockfd, struct sockaddr * myaddr, socklen_t addrlen);
@@ -42,7 +53,7 @@ int listen(int sockfd, int backlog);
 /**
  * @brief：受理连接请求等待队列中待处理的客户连接请求。（若调用成功，函数内部将自动产生用于数据I/O的套接字）
  * @param sockfd：服务器套接字的文件描述符
- * @param addr：发起连接请求的客户端地址，调用函数后向传递来的地址变量参数填充客户端地址
+ * @param addr：发起连接请求的客户端地址，调用函数后将传递来的地址变量参数填充客户端地址
  * @param addrlen：第二个参数的长度，但是存有长度的变量地址。函数调用完成后，该变量即被填入客户端地址长度
  * @return：成功返回创建的套接字文件描述符（或句柄），失败返回-1（或SOCKET_ERROR）
  */
@@ -56,6 +67,15 @@ int accept(int sockfd, struct sockaddr * addr, socklen_t * addrlen);
  * @return：成功返回0，失败返回-1
  */
 int connect(int sockfd, struct sockaddr * servaddr, socklen_t addrlen);
+
+/**
+ * @brief：半关闭
+ * @param sock：需要断开的套接字文件描述符（或句柄）
+ * @param howto：传递断开的方式，Linux:SHUT_RD、SHUT_WR、SHUT_RDWR,windows：SD_RECEIVE、SD_SEND、SD_BOTH
+ * @return：成功返回0，失败返回-1（或SOCKET_ERROR）
+ */
+int shutdown(int sock, int howto);
+
 ```
 ##### windos下winsock独有的相关函数
 
@@ -114,7 +134,7 @@ ssize_t write(int fd, const void * buf, size_t nbytes);
 
 /**
  * @brief：读取文件 (Linux套接字同）	
- * @param fd：数据传输对象的文件描述符
+ * @param fd：数据接收对象的文件描述符
  * @param buf：需要传输数据的缓冲地址值
  * @param nbytes：要传输数据的字节数
  * @return：成功返回写入的字节数，失败返回-1
@@ -156,7 +176,7 @@ int recv(SOCKET s, const char * buf, int len, int flags);
  * @param buf：保存待传输数据的缓冲地址
  * @param hbytes：待传输数据长度
  * @param flags：可选参数，若没有则传递0
- * @param to：存有目标地址信息的sockaddr结构体变量的地址
+ * @param to：存有目标地址（服务端）信息的sockaddr结构体变量的地址
  * @param addrlen：传递给参数to的地址结构体变量长度
  * @return：成功时返回传输的字节数，失败返回-1
  */
@@ -165,11 +185,11 @@ ssize_t sendto(int sock, void * buf, size_t hbytes, int flags,
 
 /**
  * @breief：UDP接收数据函数
- * @param sock：用于传输数据的UDP套接字文件描述符
+ * @param sock：用于接收数据的UDP套接字文件描述符
  * @param buf：保存接收数据的缓冲地址
  * @param hbytes：可接收的最大字节数，故无法超过参数buff所指的缓存大小
  * @param flags：可选参数，若没有则传递0
- * @param from：存有发送端地址信息的sockaddr结构体变量的地址
+ * @param from：指向存放对端地址的区域（发送数据源的地址被复制到相应的sockaddr结构中）
  * @param addrlen：参数from的地址结构体变量长度
  * @return：成功时返回接收到字节数（收到EOF时为0），失败返回-1
  */
@@ -177,17 +197,6 @@ ssize_t recvfrom(int sock, void * buf, size_t hbytes, int flags,
                  struct sockaddr * from, socklen_t addrlen);
 
 ```
-
-
-
-#### 接受连接请求的套接字创建过程(server端)
-
-1. 调用socket函数创建套接字。
-2. 调用bind函数分配IP地址和端口号。
-3. 调用listen函数转为可接受的请求状态。
-4. 调用accept函数受理连接请求。
-
-
 
 ### 地址信息的表示
 
@@ -286,4 +295,11 @@ struct sockaddr
                           LPWSAPROTOCOL_INFO lpProtocolInfo,
                           LPTSTR lpszAddressString, LPDWORD lpdwAddressStringLength);
    ```
+
+### 多进程服务器
+
+##### 僵尸进程和孤儿进程（[链接](https://blog.csdn.net/Eunice_fan1207/article/details/81387417?utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-2.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromMachineLearnPai2%7Edefault-2.control)）
+
+- 僵尸进程：子进程先于父进程结束，子进程的PCB需要其父进程释放，但是父进程并没有释放子进程的PCB。僵尸进程实际上是一个已经死掉的进程。（子进程运行结束，但父进程还存在，并且父进程为未将子进程销毁）
+- 孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤儿进程。孤儿进程将被init进程(进程号为1)所收养，并由init进程对它们完成状态收集工作。
 
